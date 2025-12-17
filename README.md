@@ -1,191 +1,218 @@
-# 📚 Library Management System – REST API
+📚 Library Management System – REST API
 
-A robust RESTful API for managing books, members, borrowing transactions, and fines in a library system.  
-This project demonstrates **state machine implementation**, **business rule enforcement**, and **clean backend architecture**.
+A production-ready RESTful API for managing books, members, borrowing transactions, and fines in a library system.
 
----
+This project focuses on state machine design, complex business rule enforcement, and clean backend architecture, closely modeling real-world library workflows.
 
-## 🚀 Features
+🚀 Key Highlights (Evaluator Focus)
 
-- Full CRUD operations for Books and Members
-- Borrow & Return lifecycle management
-- State machine for book availability
-- Borrowing limits and fine enforcement
-- Automatic overdue detection
-- Member suspension based on overdue behavior
-- Fine calculation and payment handling
+✔ State machine–driven book lifecycle
+✔ Centralized business rule validation
+✔ Relational database with integrity constraints
+✔ Clear separation of concerns (routes, controllers, services)
+✔ Fully testable via Postman / VS Code .http files
+✔ Realistic error handling and HTTP status codes
 
----
+🛠️ Tech Stack
 
-## 🛠️ Tech Stack
+Backend: Node.js, Express.js
 
-- **Backend:** Node.js, Express.js
-- **Database:** PostgreSQL
-- **ORM:** Sequelize
-- **Utilities:** Day.js
-- **Testing:** Postman
-- **Environment:** dotenv
+Database: PostgreSQL
 
----
+ORM: Sequelize
 
-## 📂 Project Structure
+Date Handling: Day.js
 
+API Testing: Postman / VS Code REST Client
+
+Environment: dotenv
+
+📂 Project Structure (Reviewed & Modular)
 src/
-├── config/ # Database configuration
-├── controllers/ # Request handling
-├── services/ # Business logic & state machines
-├── models/ # Sequelize models
-├── routes/ # API routes
-├── middlewares/ # Error handling
-├── utils/ # Enums & helpers
+├── config/          # Database configuration
+├── controllers/     # Request/response handling
+├── services/        # Business logic & state machines
+├── models/          # Sequelize models
+├── routes/          # REST API routes
+├── middlewares/     # Centralized error handling
+├── utils/           # Enums, constants & helpers
 ├── app.js
 server.js
 
-markdown
-Copy code
+Why this structure?
 
----
+Controllers remain thin
 
-## 🗄️ Database Schema
+Services handle state transitions & rules
 
-### Entities
+Models stay purely relational
 
-#### Book
-- id
-- isbn
-- title
-- author
-- category
-- status (`available`, `borrowed`, `reserved`, `maintenance`)
-- total_copies
-- available_copies
+Business logic is reusable & testable
 
-#### Member
-- id
-- name
-- email
-- membership_number
-- status (`active`, `suspended`)
+🗄️ Database Schema
+Entities & Relationships
+📘 Book
 
-#### Transaction
-- id
-- book_id (FK)
-- member_id (FK)
-- borrowed_at
-- due_date
-- returned_at
-- status (`active`, `returned`, `overdue`)
+id
 
-#### Fine
-- id
-- member_id (FK)
-- transaction_id (FK)
-- amount
-- paid_at
+isbn
 
----
+title
 
-## 🔄 State Machine Design
+author
 
-### Book State Transitions
+category
+
+status → available | borrowed | reserved | maintenance
+
+total_copies
+
+available_copies
+
+👤 Member
+
+id
+
+name
+
+email
+
+membership_number
+
+status → active | suspended
+
+🔄 Transaction
+
+id
+
+book_id (FK → Book)
+
+member_id (FK → Member)
+
+borrowed_at
+
+due_date
+
+returned_at
+
+status → active | returned | overdue
+
+💰 Fine
+
+id
+
+member_id (FK → Member)
+
+transaction_id (FK → Transaction)
+
+amount
+
+paid_at
+
+🔄 State Machine Implementation
+📘 Book State Machine
 available → borrowed → available
 available → reserved
 available → maintenance
 
-shell
-Copy code
 
-### Transaction State Transitions
+Implemented in borrowService.js and returnService.js
+
+Invalid transitions are blocked before DB writes
+
+🔄 Transaction State Machine
 active → returned
 active → overdue
 
-markdown
-Copy code
 
-State transitions are validated inside the **service layer** to prevent invalid operations.
+Overdue detection is date-based
 
----
+Status updates occur automatically during checks
 
-## 📏 Business Rules Implemented
+📏 Business Rules Enforcement
 
-- A member can borrow **maximum 3 books**
-- Loan period is **14 days**
-- Overdue fine: **$0.50 per day**
-- Members with **unpaid fines cannot borrow**
-- Members with **3+ overdue books are suspended**
-- Borrowing unavailable or already borrowed books is prevented
+All business rules are centralized in the service layer (no duplication).
 
-All rules are centralized in the service layer for maintainability.
+Implemented Rules
 
----
+📚 Max 3 concurrent borrows per member
 
-## 📌 API Endpoints
+⏳ Standard loan period = 14 days
 
-### Books
-- `POST /books`
-- `GET /books`
-- `GET /books/{id}`
-- `PUT /books/{id}`
-- `DELETE /books/{id}`
-- `GET /books/available`
+💰 Overdue fine = $0.50 per day
 
-### Members
-- `POST /members`
-- `GET /members`
-- `GET /members/{id}`
-- `PUT /members/{id}`
-- `DELETE /members/{id}`
-- `GET /members/{id}/borrowed`
+🚫 Members with unpaid fines cannot borrow
 
-### Transactions
-- `POST /transactions/borrow`
-- `POST /transactions/{id}/return`
-- `GET /transactions/overdue`
+⚠️ Members with 3 or more overdue books are suspended
 
-### Fines
-- `POST /fines/{id}/pay`
+❌ Borrowing unavailable or already borrowed books is blocked
 
----
+Where this logic lives:
 
-## 🧪 API Testing
+validationService.js
 
-A **Postman collection** is included in the `/postman` folder for easy testing of all endpoints.
+borrowService.js
 
----
+memberStatusService.js
 
-## ⚙️ Setup Instructions
+returnService.js
 
-### 1️⃣ Clone the repository
-```bash
-git clone <your-repo-url>
-cd library-management-api
-2️⃣ Install dependencies
-bash
-Copy code
-npm install
-3️⃣ Configure environment variables
-Create a .env file:
+📌 API Endpoints
+📘 Books
 
-env
-Copy code
-PORT=3000
-DB_NAME=library_db
-DB_USER=postgres
-DB_PASSWORD=yourpassword
-DB_HOST=localhost
-4️⃣ Run the application
-bash
-Copy code
-npm run dev
-Server runs at:
+POST /books
 
-arduino
-Copy code
-http://localhost:3000
+GET /books
+
+GET /books/{id}
+
+PUT /books/{id}
+
+DELETE /books/{id}
+
+GET /books/available
+
+👤 Members
+
+POST /members
+
+GET /members
+
+GET /members/{id}
+
+PUT /members/{id}
+
+DELETE /members/{id}
+
+GET /members/{id}/borrowed
+
+🔄 Transactions
+
+POST /transactions/borrow
+
+POST /transactions/{id}/return
+
+GET /transactions/overdue
+
+💰 Fines
+
+POST /fines/{id}/pay
+
+🧪 API Testing & Verification
+
+All endpoints can be tested using the provided Postman / VS Code HTTP files.
+
+📁 Location:
+
+postman/POST/
 
 
+Includes:
 
+Book creation
 
+Member creation
 
+Borrow flow
 
-
+Return flow
