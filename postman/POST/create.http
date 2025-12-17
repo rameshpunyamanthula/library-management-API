@@ -1,0 +1,8 @@
+POST http://localhost:3000/members
+Content-Type: application/json
+
+{
+  "name": "John Doe",
+  "email": "john@example.com",
+  "membership_number": "MEM1001"
+}
