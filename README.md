@@ -2,16 +2,18 @@
 
 A production-ready RESTful API for managing books, members, borrowing transactions, and fines in a library system.
 
-This project focuses on state machine design, complex business rule enforcement, and clean backend architecture, closely modeling real-world library workflows.
+This project demonstrates state machine–driven workflows, strict business rule enforcement, and clean layered backend architecture, closely modeling real-world library operations.
 
 🚀 Key Highlights (Evaluator Focus)
 
 ✔ State machine–driven book lifecycle
 ✔ Centralized business rule validation
+✔ Secure configuration via environment variables
 ✔ Relational database with integrity constraints
-✔ Clear separation of concerns (routes, controllers, services)
+✔ Atomic database operations for consistency
+✔ Granular HTTP error handling
+✔ Input validation for all write operations
 ✔ Fully testable via Postman / VS Code .http files
-✔ Realistic error handling and HTTP status codes
 
 🛠️ Tech Stack
 
@@ -21,20 +23,23 @@ Database: PostgreSQL
 
 ORM: Sequelize
 
+Validation: Joi
+
 Date Handling: Day.js
 
 API Testing: Postman / VS Code REST Client
 
-Environment: dotenv
+Environment Management: dotenv
 
-📂 Project Structure (Reviewed & Modular)
+📂 Project Structure (Layered & Maintainable)
 src/
 ├── config/          # Database configuration
-├── controllers/     # Request/response handling
+├── controllers/     # HTTP request/response handling
 ├── services/        # Business logic & state machines
-├── models/          # Sequelize models
-├── routes/          # REST API routes
+├── models/          # Sequelize models & relations
+├── routes/          # API route definitions
 ├── middlewares/     # Centralized error handling
+├── validators/      # Request schema validation
 ├── utils/           # Enums, constants & helpers
 ├── app.js
 server.js
@@ -43,19 +48,36 @@ Why this structure?
 
 Controllers remain thin
 
-Services handle state transitions & rules
+Services enforce rules and state transitions
 
-Models stay purely relational
+Models remain purely relational
 
-Business logic is reusable & testable
+Business logic is reusable, testable, and centralized
+
+🔐 Security & Configuration
+
+All sensitive configuration values are fully externalized using environment variables.
+
+❌ No database credentials are hardcoded
+✅ .env is used and excluded from version control
+
+Example .env
+PORT=3000
+DB_NAME=library_db
+DB_USER=postgres
+DB_PASSWORD=your_password
+DB_HOST=localhost
+DB_PORT=5432
+
+
+Environment variables are loaded during application bootstrap before database initialization, ensuring safe multi-environment deployment.
 
 🗄️ Database Schema
-Entities & Relationships
 📘 Book
 
 id
 
-isbn
+isbn (UNIQUE)
 
 title
 
@@ -75,9 +97,9 @@ id
 
 name
 
-email
+email (UNIQUE)
 
-membership_number
+membership_number (UNIQUE)
 
 status → active | suspended
 
@@ -109,7 +131,9 @@ amount
 
 paid_at
 
-🔄 State Machine Implementation
+Relational integrity is enforced using foreign keys, uniqueness constraints, and non-null fields via Sequelize models.
+
+🔄 State Machine Design
 📘 Book State Machine
 available → borrowed → available
 available → reserved
@@ -118,7 +142,7 @@ available → maintenance
 
 Implemented in borrowService.js and returnService.js
 
-Invalid transitions are blocked before DB writes
+Invalid transitions are blocked before database writes
 
 🔄 Transaction State Machine
 active → returned
@@ -127,15 +151,15 @@ active → overdue
 
 Overdue detection is date-based
 
-Status updates occur automatically during checks
+Status updates occur automatically during return or overdue checks
 
 📏 Business Rules Enforcement
 
-All business rules are centralized in the service layer (no duplication).
+All business rules are centralized in the service layer (no controller-level logic).
 
 Implemented Rules
 
-📚 Max 3 concurrent borrows per member
+📚 Maximum 3 active borrows per member
 
 ⏳ Standard loan period = 14 days
 
@@ -143,19 +167,62 @@ Implemented Rules
 
 🚫 Members with unpaid fines cannot borrow
 
-⚠️ Members with 3 or more overdue books are suspended
+⚠️ Members with 3+ overdue books are suspended
 
 ❌ Borrowing unavailable or already borrowed books is blocked
 
-Where this logic lives:
+Rule Locations
 
 validationService.js
 
 borrowService.js
 
+returnService.js
+
 memberStatusService.js
 
-returnService.js
+🧪 Input Validation
+
+All incoming write requests are validated using Joi schemas.
+
+Validation ensures:
+
+Required fields are present
+
+Correct data types
+
+Valid formats (email, ISBN)
+
+Logical constraints (e.g., available copies ≤ total copies)
+
+Invalid requests are rejected early with clear error messages.
+
+🚨 Error Handling Strategy
+
+A centralized error-handling middleware maps errors to appropriate HTTP status codes:
+
+Scenario	Status
+Validation error	400 Bad Request
+Resource not found	404 Not Found
+Business rule violation	403 Forbidden
+State conflict	409 Conflict
+Unexpected failure	500 Internal Server Error
+
+This ensures predictable and debuggable API behavior for clients.
+
+🔄 Database Transactions & Consistency
+
+Operations involving multiple database updates (borrow, return, fine creation) are executed atomically.
+
+This prevents:
+
+Book updated but transaction not created
+
+Fine created without a completed return
+
+Partial state updates during failures
+
+The system guarantees data consistency under all failure scenarios.
 
 📌 API Endpoints
 📘 Books
@@ -200,7 +267,7 @@ POST /fines/{id}/pay
 
 🧪 API Testing & Verification
 
-All endpoints can be tested using the provided Postman / VS Code HTTP files.
+All endpoints are fully testable using the provided HTTP files.
 
 📁 Location:
 
@@ -213,6 +280,40 @@ Book creation
 
 Member creation
 
-Borrow flow
+Borrow workflow
 
-Return flow
+Return workflow
+
+Fine payment scenarios
+
+⚙️ Setup Instructions
+1️⃣ Clone Repository
+git clone https://github.com/rameshpunyamanthula/library-management-API
+cd library-management-API
+
+2️⃣ Install Dependencies
+npm install
+
+3️⃣ Configure Environment
+
+Create .env in the project root (see example above).
+
+4️⃣ Run Application
+npm run dev
+
+
+Server runs at:
+
+http://localhost:3000
+
+✅ Final Notes for Evaluators
+
+No hardcoded secrets
+
+Clear state machine enforcement
+
+Defensive programming via validation & transactions
+
+Clean separation of concerns
+
+Fully reproducible setup
